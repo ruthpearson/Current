@@ -1,0 +1,16 @@
+{
+   "pid": 78510,
+   "options": {
+      "reactor": null,
+      "loglevel": "info",
+      "command": "start",
+      "logdir": null,
+      "debug": false,
+      "config": "/Users/ri/Sites/Current/.crossbar/config.json",
+      "cbdir": "/Users/ri/Sites/Current/.crossbar"
+   },
+   "argv": [
+      "/usr/local/bin/crossbar",
+      "start"
+   ]
+}

@@ -121,10 +121,10 @@ class AppSession(ApplicationSession):
         ## PUBLISH and CALL every second .. forever
         ##
         counter = 0
-        self.publish('com.example.counter', "Starting to look for stuff")
+        # self.publish('com.example.counter', "Starting to look for stuff")
         while True:
-            #self.publish('com.example.counter', "Starting to look for stuff")
 
+            # self.publish('com.example.counter', "Starting to look for stuff")
 
             # Update to next frame
             ctx.wait_and_update_all()

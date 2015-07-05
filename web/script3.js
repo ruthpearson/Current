@@ -3,7 +3,7 @@
   var graph;
 
   graph = function(e, data) {
-    var baseSpeed, bg, body, circles, connection, contain, dataByDate, dataByHousehold, dataLength, dateFormat, day, dayData, dayIndex, dayMax, dayMin, dayScale, elapsed, height, index, interval, multiplier, numHouseholds, size, speed, startSunrise, startSunset, svg, t1, t2, timeLine, timeScale, timeText, width, wsuri;
+    var baseSpeed, bg, body, circles, connection, contain, dataByDate, dataByHousehold, dataLength, dateFormat, day, dayData, dayIndex, dayMax, dayMin, dayScale, height, index, interval, iterator, multiplier, numHouseholds, prevIndex, size, speed, speedText, startSunrise, startSunset, svg, t1, t2, timeLine, timeScale, timeText, width, wsuri;
     contain = d3.select(".content");
     dataByHousehold = d3.nest().key(function(d) {
       return d.respondent;
@@ -47,9 +47,9 @@
     multiplier = 1;
     speed = baseSpeed * multiplier;
     index = 0;
-    elapsed = 0;
-    width = 1000;
-    height = 800;
+    iterator = 0;
+    width = 1800;
+    height = 1000;
     startSunrise = 0;
     startSunset = 12 * 2;
     dateFormat = d3.time.format("%I:%M%p");
@@ -63,6 +63,9 @@
     });
     timeText = contain.append("div").attr({
       "class": "time"
+    });
+    speedText = contain.append("div").attr({
+      "class": "speed"
     });
     timeLine = contain.append("div").attr({
       "class": "timeline"
@@ -91,33 +94,6 @@
     }).attr({
       r: 0
     });
-    interval = setInterval(function() {
-      var timeElapsed;
-      timeElapsed = index * speed;
-      timeText.text(function() {
-        return dateFormat(new Date(1, 1, 1, index / 2, index % 2 * 30));
-      });
-      if (index >= (dataLength - 1)) {
-        index = 0;
-      }
-      if (index >= startSunrise && index < startSunset && bg === "dark") {
-        body.transition().duration(speed * 24).style({
-          background: "#454f5a"
-        });
-        bg = "light";
-      } else if (index >= startSunset && bg === "light") {
-        body.transition().duration(speed * 24).style({
-          background: "#000"
-        });
-        bg = "dark";
-      }
-      circles.transition().duration(speed).ease("quad").attr({
-        r: function(d) {
-          return dayScale(+d.entries[index].value);
-        }
-      });
-      return index++;
-    }, speed);
     wsuri = "ws://127.0.0.1:8080/ws";
     connection = new autobahn.Connection({
       url: wsuri,
@@ -129,7 +105,9 @@
       var mul2, on_counter;
       console.log("Connected");
       on_counter = function(args) {
-        return console.log(args);
+        console.log("counter");
+        console.log(args);
+        return multiplier = args;
       };
       session.subscribe('com.example.counter', on_counter).then(function(sub) {
         return console.log('subscribed to topic');
@@ -160,7 +138,39 @@
         return t2 = null;
       }
     };
-    return connection.open();
+    connection.open();
+    prevIndex = 0;
+    return interval = setInterval(function() {
+      index = Math.ceil(iterator / (4 * multiplier));
+      speed = multiplier * baseSpeed;
+      timeText.text(function() {
+        return dateFormat(new Date(1, 1, 1, index / 2, index % 2 * 30));
+      });
+      speedText.text(multiplier);
+      if (index >= (dataLength - 1)) {
+        iterator = 0;
+      }
+      if (index >= startSunrise && index < startSunset && bg === "dark") {
+        body.transition().duration(speed * 24).style({
+          background: "#454f5a"
+        });
+        bg = "light";
+      } else if (index >= startSunset && bg === "light") {
+        body.transition().duration(speed * 24).style({
+          background: "#000"
+        });
+        bg = "dark";
+      }
+      if (index !== prevIndex) {
+        circles.transition().duration(speed).ease("quad").attr({
+          r: function(d) {
+            return dayScale(+d.entries[index].value);
+          }
+        });
+      }
+      prevIndex = index;
+      return iterator++;
+    }, baseSpeed * 0.25);
   };
 
   queue().defer(d3.csv, 'data/energy-consumption.csv').await(graph);

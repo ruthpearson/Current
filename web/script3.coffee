@@ -31,9 +31,9 @@ graph = (e, data) ->
 	multiplier = 1
 	speed = baseSpeed * multiplier
 	index = 0
-	elapsed = 0
-	width = 1000
-	height = 800
+	iterator = 0
+	width = 1800
+	height = 1000
 	startSunrise = 0
 	startSunset = 12 * 2
 	dateFormat = d3.time.format("%I:%M%p")
@@ -49,6 +49,7 @@ graph = (e, data) ->
 		.attr(height: height)
 
 	timeText = contain.append("div").attr(class: "time")
+	speedText = contain.append("div").attr(class: "speed")
 	timeLine = contain.append("div").attr(class: "timeline").append("svg").attr(width: "100%").attr(height: 40)
 
 
@@ -67,28 +68,6 @@ graph = (e, data) ->
 		.attr(cy: () -> (Math.random() * (height - size)) + size/2)
 		.attr(fill: "white")
 		.attr(r: 0)
-
-	interval = setInterval(() ->
-		timeElapsed = index * speed
-		timeText.text(() -> dateFormat(new Date(1,1,1,index/2,index%2 * 30)))
-		if index >= (dataLength - 1) then index = 0
-
-		if index >= startSunrise and index < startSunset and bg is "dark"
-			body.transition().duration(speed * 24).style(background: "#454f5a")
-			bg = "light"
-		else if index >= startSunset and bg is "light"
-			body.transition()
-				.duration(speed * 24)
-				.style(background: "#000")
-			bg = "dark"
-
-		circles.transition()
-			.duration(speed)
-			.ease("quad")
-			.attr(r: (d) -> dayScale +d.entries[index].value)
-
-		index++
-	, speed)
 
 	wsuri = "ws://127.0.0.1:8080/ws"
 	# if (document.location.origin is "null" || document.location.origin is "file:#")
@@ -120,7 +99,9 @@ graph = (e, data) ->
 		# SUBSCRIBE to a topic and receive events
 		#
 		on_counter = (args) ->
-		    console.log(args)
+			console.log "counter"
+			console.log(args)
+			multiplier = args
 
 		session.subscribe('com.example.counter', on_counter).then(
 		   (sub) ->
@@ -160,6 +141,47 @@ graph = (e, data) ->
 	# now actually open the connection
 	#
 	connection.open()
+
+	prevIndex = 0
+	interval = setInterval(() ->
+		# index keeps track of the current 30-minute window
+		# FIXME: This code is wrong
+		#index = Math.ceil(elapsed/4)
+		#m = 0.25, 0.5, 1, 2, 4
+		# index = iterator * 0.25
+		index = Math.ceil(iterator/(4 * multiplier))
+		# speed determines how fast to change the visualization based on the multiplier
+		speed = multiplier * baseSpeed
+		# timeText shows the timestamp on the visualization.
+		# Changed based on index (set index correctly, and timeText will follow)
+		timeText.text(() -> dateFormat(new Date(1,1,1,index/2,index%2 * 30)))
+		# Display of multiplier; works
+		speedText.text(multiplier)
+		# speedText.text(index)
+		# Reset loop to beginning once the end has been reached
+		if index >= (dataLength - 1) then iterator = 0
+
+		# Changes to background; dependent on index and speed (duration thing)
+		if index >= startSunrise and index < startSunset and bg is "dark"
+			body.transition().duration(speed * 24).style(background: "#454f5a")
+			bg = "light"
+		else if index >= startSunset and bg is "light"
+			body.transition()
+				.duration(speed * 24)
+				.style(background: "#000")
+			bg = "dark"
+
+		# (duration thing) 
+		# TODO: needs conditional
+		if index != prevIndex 
+			circles.transition()
+				.duration(speed)
+				.ease("quad")
+				.attr(r: (d) -> dayScale +d.entries[index].value)
+
+		prevIndex = index
+		iterator++
+	, baseSpeed * 0.25)
 
 queue()
 	.defer(d3.csv, 'data/energy-consumption.csv')
