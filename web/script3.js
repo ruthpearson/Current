@@ -3,7 +3,7 @@
   var graph;
 
   graph = function(e, data) {
-    var baseSpeed, bg, body, circles, contain, dataByDate, dataByHousehold, dataLength, dateFormat, day, dayData, dayIndex, dayMax, dayMin, dayScale, elapsed, height, index, interval, multiplier, numHouseholds, size, speed, startSunrise, startSunset, svg, timeLine, timeScale, timeText, width;
+    var baseSpeed, bg, body, circles, connection, contain, dataByDate, dataByHousehold, dataLength, dateFormat, day, dayData, dayIndex, dayMax, dayMin, dayScale, elapsed, height, index, interval, multiplier, numHouseholds, size, speed, startSunrise, startSunset, svg, t1, t2, timeLine, timeScale, timeText, width, wsuri;
     contain = d3.select(".content");
     dataByHousehold = d3.nest().key(function(d) {
       return d.respondent;
@@ -91,7 +91,7 @@
     }).attr({
       r: 0
     });
-    return interval = setInterval(function() {
+    interval = setInterval(function() {
       var timeElapsed;
       timeElapsed = index * speed;
       timeText.text(function() {
@@ -118,6 +118,49 @@
       });
       return index++;
     }, speed);
+    wsuri = "ws://127.0.0.1:8080/ws";
+    connection = new autobahn.Connection({
+      url: wsuri,
+      realm: "realm1"
+    });
+    t1 = 0;
+    t2 = 0;
+    connection.onopen = function(session, details) {
+      var mul2, on_counter;
+      console.log("Connected");
+      on_counter = function(args) {
+        return console.log(args);
+      };
+      session.subscribe('com.example.counter', on_counter).then(function(sub) {
+        return console.log('subscribed to topic');
+      }, function(err) {
+        return console.log('failed to subscribe to topic', err);
+      });
+      mul2 = function(args) {
+        var x, y;
+        x = args[0];
+        y = args[1];
+        console.log("mul2() called with " + x + " and " + y);
+        return x * y;
+      };
+      return session.register('com.example.mul2', mul2).then(function(reg) {
+        return console.log('procedure registered');
+      }, function(err) {
+        return console.log('failed to register procedure', err);
+      });
+    };
+    connection.onclose = function(reason, details) {
+      console.log("Connection lost: " + reason);
+      if (t1) {
+        clearInterval(t1);
+        t1 = null;
+      }
+      if (t2) {
+        clearInterval(t2);
+        return t2 = null;
+      }
+    };
+    return connection.open();
   };
 
   queue().defer(d3.csv, 'data/energy-consumption.csv').await(graph);

@@ -90,6 +90,77 @@ graph = (e, data) ->
 		index++
 	, speed)
 
+	wsuri = "ws://127.0.0.1:8080/ws"
+	# if (document.location.origin is "null" || document.location.origin is "file:#")
+	# 	wsuri = "ws://127.0.0.1:8080/ws"
+	# else
+	# 	wsuri = (if document.location.protocol is "http:" then "ws:" else "wss:") + "//" + document.location.host + "/ws"
+
+
+	# the WAMP connection to the Router
+	#
+	connection = new autobahn.Connection({
+	url: wsuri,
+	realm: "realm1"
+	})
+
+
+	# timers
+	#
+	t1 = 0
+	t2 = 0
+
+
+	# fired when connection is established and session attached
+	#
+	connection.onopen = (session, details) ->
+
+		console.log("Connected")
+
+		# SUBSCRIBE to a topic and receive events
+		#
+		on_counter = (args) ->
+		    console.log(args)
+
+		session.subscribe('com.example.counter', on_counter).then(
+		   (sub) ->
+		      console.log('subscribed to topic')
+
+		   (err) ->
+		      console.log('failed to subscribe to topic', err)
+		)
+
+		# REGISTER a procedure for remote calling
+		#
+		mul2 = (args) ->
+		   x = args[0]
+		   y = args[1]
+		   console.log("mul2() called with " + x + " and " + y)
+		   return x * y
+
+		session.register('com.example.mul2', mul2).then(
+		   (reg) -> console.log('procedure registered'),
+		   (err) -> console.log('failed to register procedure', err)
+		)
+
+
+	# fired when connection was lost (or could not be established)
+	#
+	connection.onclose = (reason, details) ->
+		console.log("Connection lost: " + reason)
+		if (t1) 
+		   clearInterval(t1);
+		   t1 = null;
+
+		if (t2) 
+		   clearInterval(t2);
+		   t2 = null;
+
+
+	# now actually open the connection
+	#
+	connection.open()
+
 queue()
 	.defer(d3.csv, 'data/energy-consumption.csv')
 	.await(graph)
