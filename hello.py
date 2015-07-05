@@ -136,11 +136,27 @@ class AppSession(ApplicationSession):
                     #print "  {}: head at ({loc[0]}, {loc[1]}, {loc[2]}) [{conf}]" .format(id, loc=head.point, conf=head.confidence)
             
                     if head.point[2] < 900:
-                        msg =  "less than 90 cm"
+                        msg =  "0.25"
+                        print msg
+                        self.publish('com.example.counter', msg)
+                    elif 900 < head.point[2] < 1500:
+                        msg =  "0.25"
+                        print msg
+                        self.publish('com.example.counter', msg)
+                    elif 1500 < head.point[2] < 2100:
+                        msg =  "0.5"
+                        print msg
+                        self.publish('com.example.counter', msg)
+                    elif 2100 < head.point[2] < 2700:
+                        msg =  "1"
+                        print msg
+                        self.publish('com.example.counter', msg)
+                    elif 2700 < head.point[2] < 3300:
+                        msg =  "2"
                         print msg
                         self.publish('com.example.counter', msg)
                     else:
-                        msg =  "more than 90 cm"
+                        msg =  "4"
                         print msg
                         self.publish('com.example.counter', msg)
                 
